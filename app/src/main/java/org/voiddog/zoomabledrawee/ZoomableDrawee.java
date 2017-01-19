@@ -115,37 +115,17 @@ public class ZoomableDrawee extends SimpleDraweeView{
         return zoomableGestureHelper.processTouchEvent(event) || super.onTouchEvent(event);
     }
 
+    Rect drawRect = new Rect();
+    private RectF tmpRectF = new RectF();
+
     @Override
     protected void onDraw(Canvas canvas) {
-        int saveCount = canvas.save();
-        canvas.concat(zoomableGestureHelper.getZoomMatrix());
-
-        int width = imgWidth == 0 ? getWidth() : imgWidth;
-        int height = imgHeight == 0 ? getHeight() : imgHeight;
-        if(width == 0 || height == 0){
-            return;
-        }
-
-        if(scaleType == ScalingUtils.ScaleType.CENTER_CROP) {
-            float scale = Math.max(getWidth() * 1.0f / width, getHeight() * 1.0f / height);
-            width *= scale;
-            height *= scale;
-        } else {
-            float ratio = width * 1.0f / height;
-            width = (int) Math.min(getWidth(), getHeight() * ratio);
-            height = (int) Math.min(getHeight(), getWidth() / ratio);
-        }
-        int l, t;
-        l = (getWidth() - width) >> 1;
-        t = (getHeight() - height) >> 1;
-        if(getTopLevelDrawable() != null){
-            getTopLevelDrawable().setBounds(
-                    l, t, l + width, t + height
-            );
+        int count = canvas.save();
+        if(zoomableGestureHelper != null && zoomableGestureHelper.getZoomMatrix() != null) {
+            canvas.concat(zoomableGestureHelper.getZoomMatrix());
         }
         super.onDraw(canvas);
-
-        canvas.restoreToCount(saveCount);
+        canvas.restoreToCount(count);
     }
 
     @Override
@@ -160,7 +140,6 @@ public class ZoomableDrawee extends SimpleDraweeView{
         if(zoomableGestureHelper.compute((currentTime - lastComputeTime) / 1000.0f)){
             postInvalidate();
         }
-        postInvalidate();
         lastComputeTime = currentTime;
     }
 
@@ -246,8 +225,6 @@ public class ZoomableDrawee extends SimpleDraweeView{
             return rect;
         }
 
-        private RectF tmpRectF = new RectF();
-
         @Override
         public Rect getInnerBounds(Rect rect) {
             Drawable topDrawable = getTopLevelDrawable();
@@ -256,7 +233,7 @@ public class ZoomableDrawee extends SimpleDraweeView{
                 return rect;
             }
 
-            Rect drawRect = topDrawable.getBounds();
+            getInnerOriginBounds(drawRect);
             tmpRectF.set(drawRect);
             zoomableGestureHelper.getZoomMatrix().mapRect(tmpRectF);
             tmpRectF.round(rect);
@@ -275,5 +252,29 @@ public class ZoomableDrawee extends SimpleDraweeView{
 
     public Drawable getTopLevelDrawable(){
         return getHierarchy() == null ? null : getHierarchy().getTopLevelDrawable();
+    }
+
+    private Rect getInnerOriginBounds(Rect rect){
+        int width = imgWidth == 0 ? getWidth() : imgWidth;
+        int height = imgHeight == 0 ? getHeight() : imgHeight;
+        rect.set(0, 0, 0, 0);
+        if(width == 0 || height == 0){
+            return rect;
+        }
+
+        if(scaleType == ScalingUtils.ScaleType.CENTER_CROP) {
+            float scale = Math.max(getWidth() * 1.0f / width, getHeight() * 1.0f / height);
+            width *= scale;
+            height *= scale;
+        } else {
+            float ratio = width * 1.0f / height;
+            width = (int) Math.min(getWidth(), getHeight() * ratio);
+            height = (int) Math.min(getHeight(), getWidth() / ratio);
+        }
+        int l, t;
+        l = (getWidth() - width) >> 1;
+        t = (getHeight() - height) >> 1;
+        rect.set(l, t, l + width, t + height);
+        return rect;
     }
 }
