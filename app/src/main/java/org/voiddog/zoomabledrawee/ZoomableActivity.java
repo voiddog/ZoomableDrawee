@@ -44,10 +44,16 @@ public class ZoomableActivity extends AppCompatActivity{
             ZoomableDrawee zoomableDrawee;
             zoomDrawables.add(zoomableDrawee = new ZoomableDrawee(context));
             zoomableDrawee.setActualImageScaleType(ScalingUtils.ScaleType.FIT_CENTER);
+            zoomableDrawee.setImageURI(Uri.parse("http://voiddog.qiniudn.com/rem.jpg"));
             zoomDrawables.add(zoomableDrawee = new ZoomableDrawee(context));
             zoomableDrawee.setActualImageScaleType(ScalingUtils.ScaleType.FIT_CENTER);
-            zoomDrawables.add(zoomableDrawee = new ZoomableDrawee(context));
+            zoomableDrawee.setImageURI(Uri.parse("http://voiddog.qiniudn.com/rem.jpg"));
+            zoomDrawables.add(zoomableDrawee = new RegionDecodeZoomableDrawee(context));
             zoomableDrawee.setActualImageScaleType(ScalingUtils.ScaleType.FIT_CENTER);
+            zoomableDrawee.setImageURI(Uri.parse("http://voiddog.qiniudn.com/test/WechatIMG4.jpeg"));
+            zoomDrawables.add(zoomableDrawee = new RegionDecodeZoomableDrawee(context));
+            zoomableDrawee.setActualImageScaleType(ScalingUtils.ScaleType.FIT_CENTER);
+            zoomableDrawee.setImageURI(Uri.parse("file:///storage/emulated/0/DCIM/Camera/PANO_20170122_073013.jpg"));
         }
 
         @Override
@@ -57,9 +63,6 @@ public class ZoomableActivity extends AppCompatActivity{
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            ZoomableDrawee zoomableDrawee = (ZoomableDrawee) zoomDrawables.get(position);
-            zoomableDrawee.setImageURI(Uri.parse("http://voiddog.qiniudn.com/rem.jpg"));
-
             container.addView(zoomDrawables.get(position), new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
             ));

@@ -251,7 +251,7 @@ public abstract class ZoomableGestureHelper {
             scalePhysicsState.setVelocity(0);
         }
 
-        if(sgn(scale) != 0) {
+        if(sgn(scale - startScale) != 0) {
             double x = autoScale ? autoScaleCenterX : (innerBounds.right + innerBounds.left) / 2.0;
             double y = autoScale ? autoScaleCenterY : (innerBounds.bottom + innerBounds.top) / 2.0;
             zooomMatrix.postScale((float)(scale / startScale), (float)(scale / startScale),
@@ -260,7 +260,7 @@ public abstract class ZoomableGestureHelper {
 
         return sgn(newXPosition - xEndPosition) != 0 || sgn(xPhysicsState.getVelocity()) != 0
                 || sgn(newYPosition - yEndPosition) != 0 || sgn(yPhysicsState.getVelocity()) != 0
-                || sgn(scale) != 0;
+                || sgn(scale - startScale) != 0;
     }
 
     public abstract void requestDisallowInterceptTouchEvent(boolean disallow);

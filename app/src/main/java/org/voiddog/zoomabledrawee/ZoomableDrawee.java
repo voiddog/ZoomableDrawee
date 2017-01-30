@@ -136,11 +136,23 @@ public class ZoomableDrawee extends SimpleDraweeView{
 
     @Override
     public void computeScroll() {
-        long currentTime = SystemClock.uptimeMillis();
-        if(zoomableGestureHelper.compute((currentTime - lastComputeTime) / 1000.0f)){
+        if(compute()){
             postInvalidate();
         }
+    }
+
+    /**
+     * 计算下一帧
+     * @return
+     */
+    protected boolean compute(){
+        boolean res = false;
+        long currentTime = SystemClock.uptimeMillis();
+        if(zoomableGestureHelper.compute((currentTime - lastComputeTime) / 1000.0f)){
+            res = true;
+        }
         lastComputeTime = currentTime;
+        return res;
     }
 
     /**
@@ -207,7 +219,7 @@ public class ZoomableDrawee extends SimpleDraweeView{
         }
     };
 
-    private ZoomableGestureHelper zoomableGestureHelper = new ZoomableGestureHelper(getContext()) {
+    protected ZoomableGestureHelper zoomableGestureHelper = new ZoomableGestureHelper(getContext()) {
         @Override
         public void requestDisallowInterceptTouchEvent(boolean disallow) {
             if(getParent() instanceof ViewGroup){
@@ -233,10 +245,7 @@ public class ZoomableDrawee extends SimpleDraweeView{
                 return rect;
             }
 
-            getInnerOriginBounds(drawRect);
-            tmpRectF.set(drawRect);
-            zoomableGestureHelper.getZoomMatrix().mapRect(tmpRectF);
-            tmpRectF.round(rect);
+            getInnerVisibleBounds(rect);
 
             // 防止缩放变为0
             rect.right = rect.right == rect.left ? rect.left + 1 : rect.right;
@@ -254,7 +263,15 @@ public class ZoomableDrawee extends SimpleDraweeView{
         return getHierarchy() == null ? null : getHierarchy().getTopLevelDrawable();
     }
 
-    private Rect getInnerOriginBounds(Rect rect){
+    public Rect getInnerVisibleBounds(Rect rect){
+        getInnerOriginBounds(rect);
+        tmpRectF.set(rect);
+        zoomableGestureHelper.getZoomMatrix().mapRect(tmpRectF);
+        tmpRectF.round(rect);
+        return rect;
+    }
+
+    public Rect getInnerOriginBounds(Rect rect){
         int width = imgWidth == 0 ? getWidth() : imgWidth;
         int height = imgHeight == 0 ? getHeight() : imgHeight;
         rect.set(0, 0, 0, 0);
