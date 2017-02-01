@@ -131,6 +131,10 @@ public abstract class EncodeBitmapHelper {
         executorSupplier.forDecode().execute(decodeRunnable);
     }
 
+    public int getBitmapSegSize(int scaleExp){
+        return BITMAP_SEG_SIZE << scaleExp;
+    }
+
     public synchronized Uri getCurrentUri(){
         return currentUri;
     }
@@ -186,16 +190,16 @@ public abstract class EncodeBitmapHelper {
 
     private static int sCpuSize = 0;
 
+    /**
+     * 获取 cpu 的个数
+     * @return
+     */
     private static int getNumberOfCPUCores() {
         if(sCpuSize != 0){
             return sCpuSize;
         }
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.GINGERBREAD_MR1) {
-            // Gingerbread doesn't support giving a single application access to both cores, but a
-            // handful of devices (Atrix 4G and Droid X2 for example) were released with a dual-core
-            // chipset and Gingerbread; that can let an app in the background run without impacting
-            // the foreground application. But for our purposes, it makes them single core.
             return sCpuSize = 1;
         }
         try {

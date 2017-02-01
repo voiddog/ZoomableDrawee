@@ -3,7 +3,7 @@ package org.voiddog.zoomabledrawee;
 import android.app.Application;
 import android.content.Context;
 import android.graphics.Matrix;
-import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -66,7 +66,7 @@ public abstract class ZoomableGestureHelper {
     /**
      * 视图边界和内部边界
      */
-    private Rect bounds, innerBounds;
+    private RectF bounds, innerBounds;
     /**
      * 是否属于手势拖动中
      */
@@ -269,13 +269,13 @@ public abstract class ZoomableGestureHelper {
      * 获取到外部容器的范围
      * @return
      */
-    public abstract Rect getBounds(Rect rect);
+    public abstract RectF getBounds(RectF rect);
 
     /**
      * 内部滚动视图的范围
      * @return
      */
-    public abstract Rect getInnerBounds(Rect rect);
+    public abstract RectF getInnerBounds(RectF rect);
 
     /**
      * 刷新界面
@@ -323,8 +323,8 @@ public abstract class ZoomableGestureHelper {
         gestureDetector.setOnDoubleTapListener(doubleTapListener);
         scaleGestureDetector = new ScaleGestureDetector(appContext, scaleGestureListener);
 
-        bounds = new Rect();
-        innerBounds = new Rect();
+        bounds = new RectF();
+        innerBounds = new RectF();
         zooomMatrix = new Matrix();
 
         double tension = TENSION * getDensity(), friction = FRICTION * getDensity();
@@ -405,14 +405,14 @@ public abstract class ZoomableGestureHelper {
         }
     };
 
-    private int getWidth(Rect rect){
+    private float getWidth(RectF rect){
         if(rect == null){
             return 0;
         }
         return rect.right - rect.left;
     }
 
-    private int getHeight(Rect rect){
+    private float getHeight(RectF rect){
         if(rect == null){
             return 0;
         }

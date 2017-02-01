@@ -122,6 +122,7 @@ public class LruSparseCache<T> {
         }
 
         if(value instanceof Bitmap){
+            System.out.println("size of bitmap: " + ((Bitmap) value).getWidth() + ", " + ((Bitmap) value).getByteCount());
             return ((Bitmap) value).getByteCount();
         }
 
@@ -142,13 +143,13 @@ public class LruSparseCache<T> {
                 break;
             }
 
-            System.out.println("bitmap count: " + keyToValue.size() + ", total size: " + size);
+            System.out.println("value count: " + keyToValue.size() + ", total size: " + size);
 
             InnerSparseStruct<T> lastValue = timeToCountValue.valueAt(0);
             size -= sizeOf(lastValue.key, lastValue.value);
             keyToValue.remove(lastValue.key);
             timeToCountValue.remove(lastValue.lastAccessTime);
-            System.out.println("release id: " + (lastValue.key & 0x07ffffff));
+            System.out.println("release id: " + (lastValue.key & 0x07ffffff) + ", release value size: " + sizeOf(lastValue.key, lastValue.value));
         }
     }
 }

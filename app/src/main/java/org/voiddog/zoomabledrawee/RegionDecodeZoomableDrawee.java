@@ -3,8 +3,6 @@ package org.voiddog.zoomabledrawee;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
 import android.util.AttributeSet;
@@ -31,10 +29,9 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
      */
     private Uri lazyLoadUri;
 
-    private EncodeBitmapHelper encodeBitmapHelper = new EncodeBitmapHelper(dp2px(150), 20 << 20) {
+    private EncodeBitmapHelper encodeBitmapHelper = new EncodeBitmapHelper(dp2px(150), getMemoryCacheSize(getContext())) {
         @Override
         protected void onBitmapUpdate() {
-            System.out.println("postInvalidate");
             postInvalidate();
         }
     };
@@ -69,8 +66,8 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
     @Override
     public void setImageURI(Uri uri) {
         if(uri == null || isGif(uri)){
-            lazyLoadUri = null;
             super.setImageURI(uri);
+            lazyLoadUri = null;
             return;
         }
 
@@ -105,18 +102,13 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
      * @param defStyle
      */
     protected void init(Context context, AttributeSet attrs, int defStyle){
-        testPaint.setAlpha(150);
     }
 
     protected int dp2px(double dp){
         return (int) (getContext().getResources().getDisplayMetrics().density * dp);
     }
 
-    Rect tmpRect = new Rect();
-
-    RectF tmpRectF = new RectF();
-
-    Paint testPaint = new Paint();
+    RectF tmpRect = new RectF();
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -125,24 +117,16 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
             return;
         }
 
+        if(!needDisplayDecodeBitmap()){
+            return;
+        }
+
         getInnerVisibleBounds(tmpRect);
-        if(tmpRect.left == tmpRect.right || tmpRect.top == tmpRect.bottom){
-            return;
-        }
-
-        if(Math.max((tmpRect.right - tmpRect.left) / getWidth(), (tmpRect.bottom - tmpRect.top) / getHeight()) <= 2){
-            return;
-        }
-
-        if(tmpRect.left >= getWidth() || tmpRect.right <= 0 || tmpRect.top >= getHeight() || tmpRect.bottom <= 0){
-            return;
-        }
 
         int originWidth = encodeBitmapHelper.getOriginWidth();
         float scale = originWidth * 1.0f / (tmpRect.right - tmpRect.left);
-        int scaleExp = (int) Math.log(scale < 1 ? 1 : scale);
-        int originRegionBitmapSize = encodeBitmapHelper.BITMAP_SEG_SIZE << scaleExp;
-        float drawBitmapSize = originRegionBitmapSize / scale;
+        int scaleExp = (int) Math.ceil(Math.log(scale < 1 ? 1 : scale)/Math.log(2));
+        int originRegionBitmapSize = encodeBitmapHelper.getBitmapSegSize(scaleExp);
 
         int column = originWidth / originRegionBitmapSize;
         column += originWidth % originRegionBitmapSize == 0 ? 0 : 1;
@@ -151,8 +135,11 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
         int endX = (int)(Math.min(tmpRect.right - tmpRect.left, getWidth() - tmpRect.left) * scale) / originRegionBitmapSize;
         int endY = (int)(Math.min(tmpRect.bottom - tmpRect.top, getHeight() - tmpRect.top) * scale) / originRegionBitmapSize;
         int x = startX, y = startY;
-        float visibleBitmapScale = drawBitmapSize / encodeBitmapHelper.BITMAP_SEG_SIZE;
 
+        int count = canvas.save();
+        canvas.translate(tmpRect.left, tmpRect.top);
+        float visibleScale = (1 << scaleExp) / scale;
+        canvas.scale(visibleScale, visibleScale);
         while (y <= endY){
             int id = y * column + x;
             int key = encodeBitmapHelper.getKey(scaleExp, id);
@@ -160,12 +147,9 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
             if(drawRegionBitmap == null){
                 encodeBitmapHelper.addDecodeRegion(key);
             } else {
-                int left = x * originRegionBitmapSize, top = originRegionBitmapSize * y;
-                tmpRectF.left = left / scale + tmpRect.left;
-                tmpRectF.top = top / scale + tmpRect.top;
-                tmpRectF.right = tmpRectF.left + drawRegionBitmap.getWidth() * visibleBitmapScale;
-                tmpRectF.bottom = tmpRectF.top + drawRegionBitmap.getHeight() * visibleBitmapScale;
-                canvas.drawBitmap(drawRegionBitmap, null, tmpRectF, testPaint);
+                int size = encodeBitmapHelper.getBitmapSegSize(0);
+                int left = size * x, top = size * y;
+                canvas.drawBitmap(drawRegionBitmap, left, top, null);
             }
             ++x;
             if(x > endX){
@@ -173,6 +157,31 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
                 ++y;
             }
         }
+        canvas.restoreToCount(count);
+    }
+
+    protected boolean needDisplayDecodeBitmap(){
+        getInnerVisibleBounds(tmpRect);
+        if (tmpRect.left >= tmpRect.right || tmpRect.top >= tmpRect.bottom){
+            // 视图大小错误
+            return false;
+        }
+
+        if(Math.max((tmpRect.right - tmpRect.left) / getWidth(), (tmpRect.bottom - tmpRect.top) / getHeight()) < 2){
+            // 可视缩放小于2
+            return false;
+        }
+
+        if(tmpRect.left >= getWidth() || tmpRect.right <= 0 || tmpRect.top >= getHeight() || tmpRect.bottom <= 0){
+            return false;
+        }
+
+        getInnerOriginBounds(tmpRect);
+        if(encodeBitmapHelper.getOriginWidth() / (tmpRect.right - tmpRect.left) < 2){
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -186,5 +195,17 @@ public class RegionDecodeZoomableDrawee extends ZoomableDrawee{
     protected boolean isGif(Uri uri){
         return uri != null && (uri.toString().endsWith(".gif")
                 || uri.toString().endsWith(".GIF"));
+    }
+
+    /**
+     * @description
+     *
+     * @param context
+     * @return 得到需要分配的缓存大小，这里用八分之一的大小来做
+     */
+    public int getMemoryCacheSize(Context context) {
+        int width = context.getResources().getDisplayMetrics().widthPixels;
+        int height = context.getResources().getDisplayMetrics().heightPixels;
+        return width * height * 4 * 2;
     }
 }
